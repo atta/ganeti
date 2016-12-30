@@ -1,0 +1,26 @@
+# linter: https://git.spreadomat.net/ci/lint
+image: registry.sprd.net/ci/sprd-docker-ganeti
+stages:
+  - build
+  
+build_job:
+  stage: build
+  script:
+    - dpkg-buildpackage -us -uc -b
+  artifacts:
+    name: "${CI_BUILD_STAGE}_${CI_BUILD_REF_NAME}"
+    untracked: true
+    paths:
+      - ./*.deb
+publish_job:
+  only:
+    - master
+  stage: publish
+  script:
+    - mkdir -p ${HOME}/.ssh
+    - echo "${PUBLISH_SSH_KEY}" > ${HOME}/.ssh/id_rsa
+    - chmod 0600 ${HOME}/.ssh/id_rsa
+    - ls -al *.deb
+    - make publish 
+  dependencies:
+    - build_job
