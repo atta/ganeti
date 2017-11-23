@@ -1,3 +1,0 @@
-/etc/ganeti
-/usr/(local/)?lib/ganeti
-/(usr/local/)?var/(lib|run|log)/ganeti

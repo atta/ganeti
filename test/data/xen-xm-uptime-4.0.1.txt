@@ -1,3 +1,0 @@
-Name                                ID Uptime
-Domain-0                             0 98 days,  2:27:44
-instance1.example.com               119 15 days, 20:57:07

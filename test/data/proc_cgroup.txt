@@ -1,4 +1,0 @@
-3:devices:/some_group
-
-2:memory:/
-1:cpuset:/some_group
