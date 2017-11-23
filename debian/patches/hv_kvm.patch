@@ -1,0 +1,33 @@
+diff --git a/lib/hypervisor/hv_kvm/__init__.py b/lib/hypervisor/hv_kvm/__init__.py
+index 8d8ad6f..3a615d7 100644
+--- a/lib/hypervisor/hv_kvm/__init__.py
++++ b/lib/hypervisor/hv_kvm/__init__.py
+@@ -914,9 +914,9 @@ class KVMHypervisor(hv_base.BaseHypervisor):
+     if cpus == constants.CPU_PINNING_OFF:
+       # we checked this at import time
+       # pylint: disable=E1101
+-      target_process.set_cpu_affinity(range(psutil.cpu_count()))
++      target_process.cpu_affinity(range(psutil.cpu_count()))
+     else:
+-      target_process.set_cpu_affinity(cpus)
++      target_process.cpu_affinity(cpus)
+ 
+   @classmethod
+   def _AssignCpuAffinity(cls, cpu_mask, process_id, thread_dict):
+@@ -1123,14 +1123,7 @@ class KVMHypervisor(hv_base.BaseHypervisor):
+     # Cache mode
+     disk_cache = up_hvp[constants.HV_DISK_CACHE]
+     for cfdev, link_name, uri in kvm_disks:
+-      if cfdev.dev_type in constants.DTS_EXT_MIRROR:
+-        if disk_cache != "none":
+-          # TODO: make this a hard error, instead of a silent overwrite
+-          logging.warning("KVM: overriding disk_cache setting '%s' with 'none'"
+-                          " to prevent shared storage corruption on migration",
+-                          disk_cache)
+-        cache_val = ",cache=none"
+-      elif disk_cache != constants.HT_CACHE_DEFAULT:
++      if disk_cache != constants.HT_CACHE_DEFAULT:
+         cache_val = ",cache=%s" % disk_cache
+       else:
+         cache_val = ""
+

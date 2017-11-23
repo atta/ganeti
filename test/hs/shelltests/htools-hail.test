@@ -1,0 +1,241 @@
+# test that on invalid files it can't parse the request
+./test/hs/hail /dev/null
+>>>2 /Invalid JSON/
+>>>= !0
+
+# another invalid example
+echo '[]' | ./test/hs/hail -
+>>>2 /Unable to read JSObject/
+>>>= !0
+
+# empty dict
+echo '{}' | ./test/hs/hail -
+>>>2 /key 'request' not found/
+>>>= !0
+
+echo '{"request": 0}' | ./test/hs/hail -
+>>>2 /key 'request'/
+>>>= !0
+
+./test/hs/hail $TESTDATA_DIR/hail-invalid-reloc.json
+>>>2 /key 'name': Unable to read String/
+>>>= !0
+
+# and now start the real tests
+./test/hs/hail $TESTDATA_DIR/hail-alloc-drbd.json
+>>> /"success":true,.*,"result":\["node2","node1"\]/
+>>>= 0
+
+./test/hs/hail $TESTDATA_DIR/hail-reloc-drbd.json
+>>> /"success":true,.*,"result":\["node1"\]/
+>>>= 0
+
+./test/hs/hail $TESTDATA_DIR/hail-node-evac.json
+>>> /"success":true,"info":"Request successful: 0 instances failed to move and 1 were moved successfully"/
+>>>= 0
+
+./test/hs/hail $TESTDATA_DIR/hail-change-group.json
+>>> /"success":true,"info":"Request successful: 0 instances failed to move and 1 were moved successfully"/
+>>>= 0
+
+# check that hail correctly applies the disk policy on a per-disk basis
+./test/hs/hail $TESTDATA_DIR/hail-alloc-twodisks.json --no-capacity-checks
+>>> /"success":true,.*,"result":\["node1"\]/
+>>>= 0
+
+./test/hs/hail $TESTDATA_DIR/hail-alloc-invalid-twodisks.json
+>>> /"success":false,.*FailDisk: 1/
+>>>= 0
+
+# check that hail honors network requirements
+./test/hs/hail $TESTDATA_DIR/hail-alloc-restricted-network.json
+>>> /"success":true,"info":"Request successful: Selected group: Group 1.*/
+>>>= 0
+
+# check that hail fails if no nodegroup can meet network and disk template requirements
+./test/hs/hail $TESTDATA_DIR/hail-alloc-invalid-network.json
+>>> /"success":false,/
+>>>= 0
+
+# check that hail succeeds with the same test data, but with the network restrictions removed
+cat $TESTDATA_DIR/hail-alloc-invalid-network.json | grep -v -e '"network":"uuid-net-1-."' | ./test/hs/hail - --no-capacity-checks
+>>> /"success":true,"info":"Request successful: Selected group: Group 2.*/
+>>>= 0
+
+# Run some of the tests above, with exclusive storage enabled
+./test/hs/hail $T/hail-alloc-drbd.json.excl-stor
+>>> /"success":true,.*,"result":\["node.","node."\]/
+>>>= 0
+
+./test/hs/hail $T/hail-reloc-drbd.json.excl-stor
+>>> /"success":true,.*,"result":\["node1"\]/
+>>>= 0
+
+./test/hs/hail $T/hail-node-evac.json.excl-stor
+>>> /"success":true,"info":"Request successful: 0 instances failed to move and 1 were moved successfully"/
+>>>= 0
+
+./test/hs/hail $T/hail-change-group.json.excl-stor
+>>> /"success":true,"info":"Request successful: 0 instances failed to move and 1 were moved successfully"/
+>>>= 0
+
+./test/hs/hail $T/hail-alloc-twodisks.json.excl-stor
+>>> /"success":true,.*,"result":\["node1"\]/
+>>>= 0
+
+./test/hs/hail $T/hail-alloc-invalid-twodisks.json.excl-stor
+>>> /"success":false,.*FailDisk: 1"/
+>>>= 0
+
+# Same tests with exclusive storage enabled, but no spindles info in instances
+./test/hs/hail $T/hail-alloc-drbd.json.fail-excl-stor
+>>> /"success":false,.*FailSpindles: 12"/
+>>>= 0
+
+./test/hs/hail $T/hail-reloc-drbd.json.fail-excl-stor
+>>> /"success":false,.*FailSpindles/
+>>>= 0
+
+./test/hs/hail $T/hail-node-evac.json.fail-excl-stor
+>>> /"success":true,"info":"Request successful: 1 instances failed to move and 0 were moved successfully",.*FailSpindles/
+>>>= 0
+
+./test/hs/hail $T/hail-change-group.json.fail-excl-stor
+>>> /"success":true,"info":"Request successful: 1 instances failed to move and 0 were moved successfully",.*FailSpindles: 2"/
+>>>= 0
+
+./test/hs/hail $T/hail-alloc-twodisks.json.fail-excl-stor
+>>> /"success":false,.*FailSpindles: 1"/
+>>>= 0
+
+# check that hail correctly parses admin state
+./test/hs/hail -v -v $TESTDATA_DIR/hail-alloc-drbd.json
+>>>2 /runSt = StatusDown/
+>>>=0
+
+# check that hail can use the simu backend
+./test/hs/hail --simu p,8,8T,16g,16 $TESTDATA_DIR/hail-alloc-drbd.json
+>>> /"success":true,/
+>>>= 0
+
+# check that hail can use the text backend
+./test/hs/hail -t $T/simu-rebal-merged.standard $TESTDATA_DIR/hail-alloc-drbd.json
+>>> /"success":true,/
+>>>= 0
+
+# check that hail can use the simu backend
+./test/hs/hail -t $T/simu-rebal-merged.standard $TESTDATA_DIR/hail-alloc-drbd.json
+>>> /"success":true,/
+>>>= 0
+
+# check that hail pre/post saved state differs after allocation
+./test/hs/hail -v -v -v -p $TESTDATA_DIR/hail-alloc-drbd.json -S $T/hail-alloc >/dev/null 2>&1 && ! diff -q $T/hail-alloc.pre-ialloc $T/hail-alloc.post-ialloc
+>>> /Files .* and .* differ/
+>>>= 0
+
+# check that hail pre/post saved state differs after relocation
+./test/hs/hail -v -v -v -p $TESTDATA_DIR/hail-reloc-drbd.json -S $T/hail-reloc >/dev/null 2>&1 && ! diff -q $T/hail-reloc.pre-ialloc $T/hail-reloc.post-ialloc
+>>> /Files .* and .* differ/
+>>>= 0
+
+./test/hs/hail $TESTDATA_DIR/hail-reloc-drbd-crowded.json
+>>> /"success":false,/
+>>>= 0
+
+./test/hs/hail --ignore-soft-errors $TESTDATA_DIR/hail-reloc-drbd-crowded.json
+>>> /"success":true,/
+>>>= 0
+
+# evac tests
+./test/hs/hail $T/hail-node-evac.json.primary-only
+>>> /"success":true,"info":"Request successful: 0 instances failed to move and 1 were moved successfully"/
+>>>= 0
+
+./test/hs/hail $T/hail-node-evac.json.secondary-only
+>>> /"success":true,"info":"Request successful: 0 instances failed to move and 1 were moved successfully"/
+>>>= 0
+
+./test/hs/hail $T/hail-node-evac.json.all
+>>> /"success":true,"info":"Request successful: 0 instances failed to move and 1 were moved successfully"/
+>>>= 0
+
+# Check interaction between policies and spindles
+./test/hs/hail $TESTDATA_DIR/hail-alloc-spindles.json --no-capacity-checks
+>>> /"success":true,"info":"Request successful: Selected group: group2,.*FailSpindles: 2,.*"result":\["node4"\]/
+>>>= 0
+
+./test/hs/hail $T/hail-alloc-spindles.json.excl-stor
+>>> /"success":true,"info":"Request successful: Selected group: group1,.*FailSpindles: 2",.*"result":\["node1"\]/
+>>>= 0
+
+# Check that --ignore-soft-errors works and ignores tag errors
+./test/hs/hail $TESTDATA_DIR/hail-alloc-plain-tags.json
+>>> /"success":false,.*FailTags: 3/
+>>>= 0
+
+./test/hs/hail --ignore-soft-errors $TESTDATA_DIR/hail-alloc-plain-tags.json
+>>> /"success":true/
+>>>= 0
+
+# Verify dedicated allocation
+./test/hs/hail $TESTDATA_DIR/hail-alloc-dedicated-1.json
+>>> /"success":true.*"result":\["node2-quarter"\]/
+>>>= 0
+
+# Verify dedicated multi-allocation
+./test/hs/hail $TESTDATA_DIR/hail-multialloc-dedicated.json
+>>> /"success":true.*"result":\[\[\[.*\["node2-quarter"\]/
+>>>= 0
+
+# Verify that global N+1 redundancy is honored, unless requested not to
+./test/hs/hail -t $TESTDATA_DIR/shared-n1-restriction.data $TESTDATA_DIR/hail-alloc-ext.json
+>>> /"success":true.*"result":\["node[BCD]"\]/
+>>>= 0
+
+./test/hs/hail -t $TESTDATA_DIR/shared-n1-restriction.data $TESTDATA_DIR/hail-alloc-ext.json --no-capacity-checks
+>>> /"success":true.*"result":\["nodeA"\]/
+>>>= 0
+
+./test/hs/hail -t $TESTDATA_DIR/plain-n1-restriction.data $TESTDATA_DIR/hail-alloc-ext.json
+>>> /"success":true.*"result":\["node[BCD]"\]/
+>>>= 0
+
+./test/hs/hail -t $TESTDATA_DIR/plain-n1-restriction.data $TESTDATA_DIR/hail-alloc-ext.json --no-capacity-checks
+>>> /"success":true.*"result":\["nodeA"\]/
+>>>= 0
+
+# Verify that allocation restrications are honored
+./test/hs/hail -t $TESTDATA_DIR/partly-used.data $TESTDATA_DIR/hail-alloc-drbd.json
+>>> /successes 20,.*"result":\["node-0[45]","node-0[45]"\]/
+>>>= 0
+
+./test/hs/hail -t $TESTDATA_DIR/partly-used.data --restrict-allocation-to node-01,node-02,node-03 $TESTDATA_DIR/hail-alloc-drbd.json
+>>> /successes 6,.*"result":\["node-0[123]","node-0[123]"\]/
+>>>= 0
+
+./test/hs/hail -t $TESTDATA_DIR/partly-used.data $TESTDATA_DIR/hail-alloc-drbd-restricted.json
+>>> /successes 6,.*"result":\["node-0[123]","node-0[123]"\]/
+>>>= 0
+
+./test/hs/hail -t $TESTDATA_DIR/partly-used.data --restrict-allocation-to node-01,node-02 $TESTDATA_DIR/hail-alloc-drbd-restricted.json
+>>> /successes 2,.*"result":\["node-0[12]","node-0[12]"\]/
+>>>= 0
+
+./test/hs/hail -t $TESTDATA_DIR/partly-used.data --restrict-allocation-to node-03,node-04 $TESTDATA_DIR/hail-alloc-drbd-restricted.json
+>>> /successes 2,.*"result":\["node-0[34]","node-0[34]"\]/
+>>>= 0
+
+# Verify allocate-secondary
+./test/hs/hail $TESTDATA_DIR/hail-alloc-secondary.json
+>>> /successes 2, failures 0.*"result":"node-2-2"/
+>>>= 0
+
+# Check that hail account location tags
+./test/hs/hail $TESTDATA_DIR/hail-alloc-nlocation.json
+>>> /"success":true,.*,"result":\["node3","node2"\]/
+>>>= 0
+
+# Desired location test
+./test/hs/hail $TESTDATA_DIR/hail-alloc-desired-location.json
+>>> /"success":true,.*,"result":\["node1"\]/
+>>>= 0

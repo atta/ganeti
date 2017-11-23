@@ -1,0 +1,164 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# Debian package major.minor version
+VER = $(shell dpkg-parsechangelog -Sversion | sed -r 's/([0-9]+\.[0-9]+)(\..*)/\1/')
+
+# Closest upstream VCS tag, used to generate debian/control and DH files
+VCS_VER = $(shell git describe --abbrev=0 --match="v*" 2>/dev/null | sed -r 's/v([0-9]+\.[0-9]+)(\..*)/\1/')
+
+GNT_USERGROUP_PREFIX="gnt-"
+
+# Set the Python interpreter path, as ganeti will use /usr/bin/python2
+# otherwise.
+
+PYTHON := /usr/bin/python
+export PYTHON
+
+%:
+	dh $@ --with python2,sphinxdoc,bash_completion,autoreconf
+
+ifeq ($(VCS_VER),)
+debian/control:
+	$(error Empty VCS version, the target must be run within the packaging git repository)
+else
+debian/control: debian/control.in
+	for file in debian/templates/*-VER*; do \
+		fname="$$(echo $$file | sed -e 's#VER#$(VCS_VER)#' -e 's#templates/##')"; \
+		sed -e 's/@version@/$(VCS_VER)/g' $$file >"$$fname"; \
+	done
+	
+	for package in ganeti-haskell-$(VCS_VER) ganeti-htools-$(VCS_VER) ganeti-$(VCS_VER); do \
+		for file in debian/templates/versioned.*; do \
+			kind="$$(echo $$file | sed -r 's#.*\.(.*)#\1#')"; \
+			sed -e "s/@package@/$$package/g" \
+			    -e 's/@version@/$(VCS_VER)/g' \
+			    "$$file" > "debian/$${package}.$${kind}"; \
+		done; \
+	done
+	
+	sed -s 's/#VER#/$(VCS_VER)/g' debian/control.in > debian/control
+endif
+
+clean: debian/control
+	dh clean --with python2,sphinxdoc,bash_completion,autoreconf
+
+override_dh_autoreconf:
+	dh_autoreconf $(CURDIR)/autogen.sh
+
+override_dh_auto_configure:
+	dpkg-parsechangelog -Sversion > vcs-version
+	./configure \
+	  --prefix=/usr \
+	  --localstatedir=/var \
+	  --sysconfdir=/etc \
+	  --with-export-dir=/var/lib/ganeti/export \
+	  --with-iallocator-search-path=/usr/local/lib/ganeti/iallocators,/usr/lib/ganeti/iallocators \
+	  --with-os-search-path=/srv/ganeti/os,/usr/local/lib/ganeti/os,/usr/lib/ganeti/os,/usr/share/ganeti/os \
+	  --with-extstorage-search-path=/srv/ganeti/extstorage,/usr/local/lib/ganeti/extstorage,/usr/lib/ganeti/extstorage,/usr/share/ganeti/extstorage \
+	  --docdir=/usr/share/doc/ganeti \
+	  --enable-restricted-commands \
+	  --disable-symlinks \
+	  --with-haskell-flags="-optl -Wl,-z,relro -optl -Wl,--as-needed" \
+	  --with-user-prefix=$(GNT_USERGROUP_PREFIX) \
+	  --with-group-prefix=$(GNT_USERGROUP_PREFIX) \
+	  --with-ssh-initscript="/usr/sbin/invoke-rc.d ssh" \
+	  --with-backup-dir="/var/backups"
+
+override_dh_auto_clean:
+	[ ! -f Makefile ] || $(MAKE) distclean
+	# this is not removed by make distclean :(
+	rm -f ganeti
+
+	rm -f debian/ganeti.init
+	rm -f debian/ganeti.cron.d
+	rm -f debian/ganeti.default
+	rm -f debian/ganeti.postinst
+	rm -f debian/ganeti.postrm
+	rm -f vcs-version
+	dh_auto_clean
+
+override_dh_auto_build:
+	dh_auto_build
+
+	# Generate postinst and postrm scripts
+	$(CURDIR)/debian/genscript.py postinst "$(CURDIR)" | \
+		sed -f "$(CURDIR)/autotools/replace_vars.sed" \
+		    -e "s#@VER@#$(VER)#g" >"$(CURDIR)/debian/ganeti.postinst"
+	$(CURDIR)/debian/genscript.py postrm "$(CURDIR)" >"$(CURDIR)/debian/ganeti.postrm"
+
+override_dh_install-indep:
+	dh_install --fail-missing -pganeti-$(VER) -Xsbin/ganeti-confd -Xganeti/mon-collector \
+		-Xganeti/default -Xbin/h -Xman1/h -Xsbin/ganeti-mond -Xsbin/ganeti-luxid -Xhail
+	dh_install --fail-missing -i -Nganeti-$(VER) -Xganeti/$(VER)
+
+	cp $(CURDIR)/doc/examples/ganeti.initd $(CURDIR)/debian/ganeti.init
+	cp $(CURDIR)/doc/examples/ganeti.cron $(CURDIR)/debian/ganeti.cron.d
+	sed -e 's/^RAPI_ARGS=.*/RAPI_ARGS="-b 127.0.0.1 --require-authentication"/' \
+		$(CURDIR)/doc/examples/ganeti.default > $(CURDIR)/debian/ganeti.default
+
+	# Dummy Python module for the RAPI client
+	# Add missing bits to ganeti and python-ganeti-rapi.
+	cp $(CURDIR)/debian/tmp/usr/share/ganeti/$(VER)/ganeti/rapi/client.py \
+	   $(CURDIR)/debian/python-ganeti-rapi/usr/share/pyshared/ganeti/rapi/
+	touch $(CURDIR)/debian/python-ganeti-rapi/usr/share/pyshared/ganeti/__init__.py
+	touch $(CURDIR)/debian/python-ganeti-rapi/usr/share/pyshared/ganeti/rapi/__init__.py
+	
+	# Finally ship a compatibility symlink for masterd
+	ln -s ../share/ganeti/default/ganeti-masterd debian/ganeti/usr/sbin/ganeti-masterd
+
+override_dh_python2:
+	dh_python2
+
+	# /usr/share/ganeti/<VER> is not in the default search path of dh_python2
+	dh_python2 -pganeti-$(VER) usr/share/ganeti/$(VER)
+
+override_dh_installinit:
+	dh_installinit --error-handler=true --no-restart-on-upgrade -i -- defaults 20 80
+
+override_dh_compress:
+	dh_compress
+
+	# Compress version-specific manpages, not automatically detected by dh_compress
+	for package in ganeti-$(VER) ganeti-htools-$(VER); do \
+		(cd $(CURDIR)/debian/$$package && \
+			find usr/share/ganeti/$(VER)/root/usr/share/man -type f) | \
+			xargs dh_compress -p$$package; \
+	done
+
+	# Fix the symlinks under /usr/share/man to point to the compressed
+	# files. The symlinks are shipped in the ganeti package, and because
+	# they are indirect links through /etc, they would not be detected by
+	# dh_compress anyway.
+	for file in $$(find $(CURDIR)/debian/ganeti/usr/share/man \
+			    $(CURDIR)/debian/ganeti-htools/usr/share/man \
+			    -type l); do \
+		target=$$(readlink "$$file"); \
+		rm "$$file"; \
+		ln -sf "$${target}.gz" "$${file}.gz"; \
+	done
+
+override_dh_link:
+	# Fix the links in ganeti-htools to refer directly to the version at hand
+	for file in $$(find $(CURDIR)/debian/ganeti-htools/usr -type l); do \
+		target="$$(readlink "$$file" | sed -r -e 's#/usr/(lib|share)/ganeti/default/#/usr/\1/ganeti/$(VER)/#')"; \
+		ln -sf "$$target" "$$file"; \
+	done
+
+	# Now let dh_link fix all symlinks
+	dh_link
+
+# Disable dh_sphinxdoc for binary-arch, as it will raise an error
+override_dh_sphinxdoc-arch:
+
+# Disable the test suite, as it requires the daemon users to be present
+# at build time.
+override_dh_auto_test:
+
+
+.PHONY: override_dh_auto_configure override_dh_auto_clean override_dh_auto_build \
+	override_dh_installinit override_dh_install-indep override_dh_sphinxdoc-arch \
+	override_dh_auto_test override_dh_compress override_dh_python2 \
+	override_dh_link genfiles override_dh_autoreconf check-vcs-version

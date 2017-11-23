@@ -1,0 +1,116 @@
+diff --git a/lib/hypervisor/hv_kvm/__init__.py b/lib/hypervisor/hv_kvm/__init__.py
+index 8d8ad6f..ab8b575 100644
+--- a/lib/hypervisor/hv_kvm/__init__.py
++++ b/lib/hypervisor/hv_kvm/__init__.py
+@@ -490,6 +490,8 @@ class KVMHypervisor(hv_base.BaseHypervisor):
+       hv_base.ParamInSet(True, constants.HT_KVM_VALID_SCSI_CONTROLLER_TYPES),
+     constants.HV_DISK_DISCARD:
+       hv_base.ParamInSet(False, constants.HT_VALID_DISCARD_TYPES),
++    constants.HV_DISK_BPS: hv_base.OPT_NONNEGATIVE_INT_CHECK,
++    constants.HV_DISK_IOPS: hv_base.OPT_NONNEGATIVE_INT_CHECK,
+     constants.HV_KVM_CDROM_DISK_TYPE:
+       hv_base.ParamInSet(False, constants.HT_KVM_VALID_DISK_TYPES),
+     constants.HV_USB_MOUSE:
+@@ -1120,6 +1122,18 @@ class KVMHypervisor(hv_base.BaseHypervisor):
+       discard_val = ""
+     else:
+       discard_val = ",discard=%s" % discard_mode
++    # bps limit
++    bps_limit = up_hvp[constants.HV_DISK_BPS]
++    if bps_limit == constants.HT_BPS_DEFAULT:
++      bps_val = ""
++    else:
++      bps_val = ",throttling.bps-total=%d" % bps_limit
++    # iops limit
++    iops_limit = up_hvp[constants.HV_DISK_IOPS]
++    if iops_limit == constants.HT_iops_DEFAULT:
++      iops_val = ""
++    else:
++      iops_val = ",throttling.iops-total=%d" % iops_limit
+     # Cache mode
+     disk_cache = up_hvp[constants.HV_DISK_CACHE]
+     for cfdev, link_name, uri in kvm_disks:
+@@ -1147,8 +1161,9 @@ class KVMHypervisor(hv_base.BaseHypervisor):
+ 
+       drive_uri = _GetDriveURI(cfdev, link_name, uri)
+ 
+-      drive_val = "file=%s,format=raw%s%s%s%s%s" % \
+-                  (drive_uri, if_val, boot_val, cache_val, aio_val, discard_val)
++      drive_val = "file=%s,format=raw%s%s%s%s%s%s%s" % \
++                  (drive_uri, if_val, boot_val, cache_val, aio_val, discard_val,
++                   bps_val, iops_val)
+ 
+       # virtio-blk-pci case
+       if device_driver is not None:
+diff --git a/man/gnt-instance.rst b/man/gnt-instance.rst
+index fc60041..8080fc4 100644
+--- a/man/gnt-instance.rst
++++ b/man/gnt-instance.rst
+@@ -658,6 +658,19 @@ disk\_discard
+     For compatibility with older qemu versions "default" will not pass any
+     discard option to KVM.
+ 
++disk\_bps
++    Valid for the KVM hypervisor.
++
++    Limit the sequential read an write speed from a Instancedisk.
++    Total throughput limit per Instance-disk (in bytes/second).
++
++disk\_iops
++    Valid for the KVM hypervisor.
++
++    Disk I/O limits allow us to control the amount of I/O that a guest can perform,
++    this is to avoid other VMs to have less performance because of I/O the usage from a single VM.
++    Total I/O operations limit per Instance-disk(per second)
++
+ security\_model
+     Valid for the KVM hypervisor.
+ 
+diff --git a/src/Ganeti/Constants.hs b/src/Ganeti/Constants.hs
+index 52797c8..d2ea886 100644
+--- a/src/Ganeti/Constants.hs
++++ b/src/Ganeti/Constants.hs
+@@ -1655,6 +1655,12 @@ hvDiskCache = "disk_cache"
+ hvDiskDiscard :: String
+ hvDiskDiscard = "disk_discard"
+ 
++hvDiskBps :: String
++hvDiskBps = "disk_bps"
++
++hvDiskIops :: String
++hvDiskIops = "disk_iops"
++
+ hvDiskType :: String
+ hvDiskType = "disk_type"
+ 
+@@ -1901,6 +1907,8 @@ hvsParameterTypes = Map.fromList
+   , (hvDeviceModel,                     VTypeString)
+   , (hvDiskCache,                       VTypeString)
+   , (hvDiskDiscard,                     VTypeString)
++  , (hvDiskBps,                         VTypeInt)
++  , (hvDiskIops,                        VTypeInt)
+   , (hvDiskType,                        VTypeString)
+   , (hvInitrdPath,                      VTypeString)
+   , (hvInitScript,                      VTypeString)
+@@ -2838,6 +2846,12 @@ htValidDiscardTypes =
+                        htDiscardIgnore,
+                        htDiscardUnmap]
+ 
++htBpsDefault :: Int
++htBpsDefault = 0
++
++htIopsDefault :: Int
++htIopsDefault = 0
++
+ htKvmAioThreads :: String
+ htKvmAioThreads = "threads"
+ 
+@@ -4129,6 +4143,8 @@ hvcDefaults =
+           , (hvUseLocaltime,                    PyValueEx False)
+           , (hvDiskCache,                       PyValueEx htCacheDefault)
+           , (hvDiskDiscard,                     PyValueEx htDiscardDefault)
++          , (hvDiskBps,                         PyValueEx htBpsDefault)
++          , (hvDiskIops,                        PyValueEx htIopsDefault)
+           , (hvSecurityModel,                   PyValueEx htSmNone)
+           , (hvSecurityDomain,                  PyValueEx "")
+           , (hvKvmFlag,                         PyValueEx "")

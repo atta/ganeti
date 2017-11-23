@@ -1,0 +1,56 @@
+# Debconf translations for ganeti.
+# Copyright (C) 2016 THE ganeti'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the ganeti package.
+# Adriano Rafael Gomes <adrianorg@arg.eti.br>, 2016.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ganeti\n"
+"Report-Msgid-Bugs-To: ganeti@packages.debian.org\n"
+"POT-Creation-Date: 2014-04-08 08:41+0200\n"
+"PO-Revision-Date: 2016-01-04 21:23-0200\n"
+"Last-Translator: Adriano Rafael Gomes <adrianorg@arg.eti.br>\n"
+"Language-Team: Brazilian Portuguese <debian-l10n-portuguese@lists.debian."
+"org>\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: boolean
+#. Description
+#: ../templates/versioned.templates:2001
+msgid "Abort ${package} removal?"
+msgstr "Cancelar a remoção de ${package}?"
+
+#. Type: boolean
+#. Description
+#: ../templates/versioned.templates:2001
+msgid ""
+"You are attempting to remove ${package}, but it seems that the running "
+"Ganeti version is still ${version}."
+msgstr ""
+"Você está tentando remover ${package}, mas parece que a versão do Ganeti em "
+"execução ainda é a ${version}."
+
+#. Type: boolean
+#. Description
+#: ../templates/versioned.templates:2001
+msgid ""
+"This can happen if you upgrade the ganeti package to a new minor version, "
+"but have not run \"gnt-cluster upgrade\" yet. Removing ${package} will cause "
+"Ganeti to stop functioning correctly."
+msgstr ""
+"Isso pode acontecer se você atualizar o pacote do ganeti para uma nova "
+"versão minoritária, mas ainda não tiver executado \"gnt-cluster upgrade\". "
+"Remover ${package} fará com que o Ganeti pare de funcionar corretamente."
+
+#. Type: boolean
+#. Description
+#: ../templates/versioned.templates:2001
+msgid ""
+"It is highly recommended to abort the removal now and upgrade the cluster "
+"before removing ${package}."
+msgstr ""
+"É altamente recomendável cancelar a remoção agora e atualizar o cluster "
+"antes de remover ${package}."

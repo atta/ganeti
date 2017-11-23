@@ -1,0 +1,197 @@
+ganeti (2.15.2-1) unstable; urgency=high
+
+  ganeti-rapi is now bound to the loopback interface by default and anonymous
+  access has been turned off even for read-only operations, to prevent
+  potential disclosure of sensitive cluster information, like in the case of
+  CVE-2015-7945. If you rely on RAPI for external tools, make sure to restore
+  the previous behavior by removing the arguments from /etc/default/ganeti.
+
+  Additionally, RAPI's SSL implementation is vulnerable to a Denial-of-Service
+  attack (CVE-2015-7944) when exposed to public networks. If you intend to run
+  RAPI on a public network, you are advised to place it behind a reverse proxy
+  (e.g. nginx, apache or haproxy) for SSL termination.
+
+ -- Apollon Oikonomopoulos <apoikos@debian.org>  Wed, 30 Dec 2015 15:47:32 +0200
+
+ganeti (2.12.5-1) unstable; urgency=medium
+
+  This release contains a fix for an SSL-related issue in Ganeti's RPC
+  mechanism. The fix makes it necessary to run
+
+      gnt-cluster renew-crypto --new-node-certificates
+
+  after a cluster is fully upgraded to 2.12.5. For more information about the
+  issue, see https://code.google.com/p/ganeti/issues/detail?id=1094.
+
+ -- Apollon Oikonomopoulos <apoikos@debian.org>  Mon, 20 Jul 2015 15:22:58 +0300
+
+ganeti (2.11.5-1) unstable; urgency=high
+
+  Security Release.
+
+  Please read the text of the advisory, quoted below, for more information:
+
+  Ganeti, an open source virtualisation manager, suffered from an insecure file
+  permission vulnerability that leads to sensitive information disclosure. This
+  issue was fixed with versions 2.10.7 and 2.11.5.
+
+  The Ganeti upgrade command ‘gnt-cluster upgrade’ creates an archive of the
+  current configuration of the cluster (e.g. the contents of “/var/lib/ganeti”).
+  The archive is named following the pattern ganet*.tar and is written to
+  “/var/lib/”. Such archives were written with too lax permissions that made
+  it possible to read them as unprivileged user, on the master node.
+
+  The configuration archive contains sensitive information, including SSL keys
+  for the inter-node communication via RPC as well as the credentials for the
+  remote API (RAPI). Such information can be used to control various operations
+  of the cluster, including shutting down and removing instances and nodes from
+  the cluster, or assuming the identity of the cluster in a MITM attack.
+
+  This vulnerability only affects Ganeti clusters meeting the following
+  criteria:
+   * The cluster is running Ganeti version 2.10.0 or higher.
+   * The upgrade command was run, for example when upgrading from 2.10 to 2.11.
+   * Unprivileged users have access to the host machines and in particular to
+     the cluster master node.
+
+  With the fixed release, the upgrade command will set the permissions of the
+  archives properly. However, in case previous versions have created an unsafe
+  archive already, the following mitigations are advised:
+   * Remove the access to the archive for unprivileged users (for example by
+     running “chmod 400 /var/lib/ganeti*.tar”).
+   * Renew the SSL keys by running “gnt-cluster renew-crypto”. You may need to
+     pass the --new-cluster-certificate, --new-confd-hmac-key,
+     --new-rapi-certificate, --new-spice-certificate,
+     --new-cluster-domain-secret flags, and (for version 2.11 only)
+     the --new-node-certificates flag.
+   * Renew the RAPI credentials by editing the /var/lib/ganeti/rapi_users file.
+   * Update RAPI, confd and other clients with the new secrets and
+     certificates, if applicable.
+   * Look for any other information regarded as secret in /var/lib/ganeti and
+     change it. For example VNC and SPICE passwords are not by default kept
+     there, but could, if Ganeti is so configured.
+
+  This vulnerability will be published as oCert-2014-006 on ocert.org; CVE ID is
+  pending. Thanks to Apollon Oikonomopoulos for reporting and fixing this issue.
+
+  Affected versions: 2.10.0 - 2.10.6, 2.11.0 - 2.11.4
+  Fixed versions: 2.10.7, 2.11.5
+
+ -- Guido Trotter <ultrotter@debian.org>  Mon, 11 Aug 2014 15:14:40 +0200
+
+ganeti (2.11.2-1) unstable; urgency=medium
+
+  Ganeti versions 2.10 and onwards support a coordinated cluster-wide
+  upgrade between different minor versions (e.g. 2.10.5 -> 2.11.2). This makes
+  the upgrade process different, depending on the previously installed
+  version:
+
+  * If you are upgrading from 2.10.x, you should first upgrade the packages on
+    all cluster nodes and then run
+
+      gnt-cluster upgrade --to=2.11
+
+    on the master node to switch to the new version. The old 2.10 packages can
+    be safely removed after a successful upgrade.
+
+  * If you are upgrading from 2.9.x or earlier, please follow the usual
+    upgrade procedure by stopping the master, upgrading the packages on all
+    nodes (the master daemon will refuse to start), and then running
+    cfgupgrade on the master node to upgrade the configuration.
+
+ -- Apollon Oikonomopoulos <apoikos@debian.org>  Fri, 13 Jun 2014 12:15:19 +0300
+
+ganeti (2.10.2-1) unstable; urgency=medium
+
+  Ganeti now ships a molly-guard(8) script that attempts to prevent an
+  accidental shutdown or reboot of a node with running instances. To use this
+  functionality, simply install the molly-guard package.
+
+ -- Apollon Oikonomopoulos <apoikos@debian.org>  Thu, 20 Mar 2014 11:46:58 +0200
+
+ganeti (2.10.1-1) unstable; urgency=medium
+
+  As of 2.10.1-1, ganeti-htools is intended for stand-alone installation on
+  non-cluster systems only and conflicts with the ganeti package. The ganeti
+  package itself now provides the htools binaries for cluster systems in a way
+  that is compatible with upstream's new upgrade model[1].
+
+  Future minor version upgrades (e.g. from 2.10 to 2.11) will be compatible
+  with upstream's new upgrade model, using `gnt-cluster upgrade' (see [1]).
+
+    [1] http://docs.ganeti.org/ganeti/2.10/html/design-upgrade.html
+
+ -- Apollon Oikonomopoulos <apoikos@debian.org>  Wed, 05 Mar 2014 15:35:16 +0200
+
+ganeti (2.8.0-1) unstable; urgency=low
+
+  As of 2.8.0-1, ganeti is configured to use separate users for its daemons.
+  Each daemon now runs as a different user (all with a “gnt-” username prefix)
+  and root access is currently granted only to the node daemon. This is a
+  build-time setting and existing installations will be automatically converted
+  to use the new user separation model.
+
+ -- Apollon Oikonomopoulos <apoikos@gmail.com>  Tue, 01 Oct 2013 18:02:24 +0300
+
+ganeti (2.7.0-2) unstable; urgency=low
+  The ganeti2 package has been renamed to ganeti, since the original reasons
+  for nameing the package ganeti2 (i.e. the 1.2 to 2.0 migration) no longer
+  apply. A dummy transitional ganeti2 package is provided for compatibility,
+  you can safely remove it after the installation has finished.
+
+  Since 2.7.0-2, all internal Ganeti Python libraries are shipped as a private
+  module. This is done because the Ganeti internal APIs are not guaranteed to
+  be stable and direct use by 3rd-party applications is discouraged. Thus, any
+  3rd-party programs importing Ganeti's Python code, should now live under
+  /usr/share/ganeti or include /usr/share/ganeti in Python's sys.path.
+
+  The RAPI client library, being the only stable external API, is now shipped
+  as a public module in its own package, python-ganeti-rapi.
+
+  Since 2.7.0-2, the HTML documentation is provided in the ganeti-doc package.
+
+ -- Apollon Oikonomopoulos <apoikos@gmail.com>  Sat, 13 Jul 2013 04:04:27 +0300
+
+ganeti2 (2.1.1-1) unstable; urgency=low
+
+  Upgrading from Lenny's 1.2 directly to 2.1 requires a two-step method: first
+  run /usr/lib/ganeti/tools/cfgupgrade12 followed by the normal
+  /usr/lib/ganeti/tools/cfgupgrade. This is somewhat more tricky than the
+  intermediate step (1.2 to 2.0 and 2.0 to 2.1), but should otherwise work.
+  Backup of the configuration directory is of course recommended, and reading
+  the wiki page too. Note: if running 2.0, it is possible do to the upgrade
+  without downtime. If running 1.2, it is a must to stop instances.
+
+  Detailed instructions (for both 1.2->2.1 and 2.0->2.1 upgrades):
+
+  - stop cron, or comment out the watcher entry in cron
+  - stop ganeti on the master node
+  - make a backup of /var/lib/ganeti
+  - install new software
+  - if running 1.2, stop all instances
+  - if running 1.2, first migrate all instances to DRBD8 using
+    /usr/lib/ganeti/tools/drbd8-upgrade
+  - if running 1.2, on the master node run /usr/lib/ganeti/tools/cfgupgrade12
+  - on the master node, run /usr/lib/ganeti/tools/cfgupgrade
+  - if both cfgupgrade runs have finished successfully, remove the file
+    /var/lib/ganeti/ssconf_hypervisor on all nodes on which it still exists
+  - on all non-master nodes, restart ganeti (invoke-rc.d ganeti restart); this
+    will give some warnings for rapi and confd daemons, but ignore them for now
+  - on the master node, restart ganeti, and confirm "gnt-node list" works
+  - on the master node, run "gnt-cluster redist-conf"
+  - restart ganeti on all nodes now (once more, and on the master node last)
+  - check that "gnt-cluster verify" doesn't complain
+  - you can now start all instances (if you stopped them)
+  - you can now restart cron (or re-enable the watcher entry)
+
+ -- Iustin Pop <iustin@debian.org>  Sat, 17 Apr 2010 19:05:45 +0200
+
+ganeti2 (2.0.3-1) unstable; urgency=low
+
+  Upgrading from the 'ganeti' package (versions 1.2.x) requires manual
+  intervention; the proper procedure is available at
+  http://code.google.com/p/ganeti/wiki/UpgradeNotes and requires full
+  cluster shutdown. It is recommended to read that first before
+  installing this package.
+
+ -- Iustin Pop <iusty@k1024.org>  Sat, 25 Jul 2009 12:12:46 +0200

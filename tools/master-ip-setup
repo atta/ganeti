@@ -1,0 +1,118 @@
+#!/bin/bash
+#
+
+# Copyright (C) 2011 Google Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+set -e -u
+
+USAGE_MSG="Usage: $0 {start|stop}"
+PATH=$PATH:/sbin:/usr/sbin:/usr/local/sbin
+
+FPING_PACKET_COUNT=5
+FPING_PACKET_INTERVAL_MS=200
+
+# Start the master IP
+start() {
+  case $CLUSTER_IP_VERSION in
+    4)
+      ARP_COMMAND="arping -q -U -c 3 -I $MASTER_NETDEV -s $MASTER_IP $MASTER_IP"
+      ;;
+    6)
+      ARP_COMMAND="ndisc6 -q r 3 $MASTER_IP $MASTER_NETDEV"
+      ;;
+    *)
+      echo "Invalid cluster IP version specified: $CLUSTER_IP_VERSION" >&2
+      exit 1
+      ;;
+  esac
+
+  # Check if the master IP address is already configured on this machine
+  if fping -c $FPING_PACKET_COUNT -p $FPING_PACKET_INTERVAL_MS \
+      -S 127.0.0.1 $MASTER_IP >/dev/null 2>&1; then
+    echo "Master IP address already configured on this machine. Doing nothing."
+    exit 0
+  fi
+
+  # Check if the master IP address is already configured on another machine
+  if fping -c $FPING_PACKET_COUNT -p $FPING_PACKET_INTERVAL_MS \
+      $MASTER_IP >/dev/null 2>&1; then
+    echo "Error: master IP address configured on another machine." >&2
+    exit 1
+  fi
+
+  if ! ip addr add $MASTER_IP/$MASTER_NETMASK \
+     dev $MASTER_NETDEV label $MASTER_NETDEV:0; then
+    echo "Error during the activation of the master IP address" >&2
+    exit 1
+  fi
+
+  # Send gratuituous ARP to update neighbours' ARP cache
+  $ARP_COMMAND || :
+}
+
+# Stop the master IP
+stop() {
+  # Check if the master IP address is still configured on this machine
+  if ! ip addr show dev $MASTER_NETDEV | \
+     grep -F " $MASTER_IP/$MASTER_NETMASK" >/dev/null 2>&1; then
+    # Check if the master IP address is configured on a wrong device
+    if fping -c $FPING_PACKET_COUNT -p $FPING_PACKET_INTERVAL_MS \
+        -S 127.0.0.1 $MASTER_IP >/dev/null 2>&1; then
+      echo "Error: master IP address configured on wrong device," \
+           "can't shut it down." >&2
+      exit 1
+    else
+      echo "Master IP address not configured on this machine. Doing nothing."
+      exit 0
+    fi
+  fi
+
+  if ! ip addr del $MASTER_IP/$MASTER_NETMASK dev $MASTER_NETDEV; then
+    echo "Error during the deactivation of the master IP address" >&2
+    exit 1
+  fi
+}
+
+if (( $# < 1 )); then
+  echo $USAGE_MSG >&2
+  exit 1
+fi
+
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  *)
+    echo $USAGE_MSG >&2
+    exit 1
+    ;;
+esac
+
+exit 0

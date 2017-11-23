@@ -1,0 +1,22 @@
+# These templates have been reviewed by the debian-l10n-english
+# team
+#
+# If modifications/additions/rewording are needed, please ask
+# debian-l10n-english@lists.debian.org for advice.
+#
+# Even minor modifications require translation updates and such
+# changes should be coordinated with translators and reviewers.
+
+Template: @package@/abort-removal
+Type: boolean
+Default: true
+_Description: Abort ${package} removal?
+ You are attempting to remove ${package}, but it seems that the running Ganeti
+ version is still ${version}.
+ .
+ This can happen if you upgrade the ganeti package to a new minor version, but
+ have not run "gnt-cluster upgrade" yet. Removing ${package} will cause Ganeti to
+ stop functioning correctly.
+ .
+ It is highly recommended to abort the removal now and upgrade the cluster before
+ removing ${package}.

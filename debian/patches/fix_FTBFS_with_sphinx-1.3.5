@@ -1,0 +1,252 @@
+commit fff726edc5e12f40307963bcef86ff7d96b7bed9
+Author: Brian Foley <bpfoley@google.com>
+Date:   Mon Feb 29 12:22:45 2016 +0000
+
+    Fix docs code errors to build with Sphinx >= 1.3.5
+    
+    Sphinx 1.3.5 enables pygments' parser warnings by default, and docs
+    builds fail if any code block is invalid.
+    
+    Fixes issue 1174.
+    
+    Signed-off-by: Brian Foley <bpfoley@google.com>
+    Reviewed-by: Klaus Aehlig <aehlig@google.com>
+---
+ doc/design-chained-jobs.rst | 12 ++++++------
+ doc/design-node-add.rst     |  2 +-
+ doc/design-ovf-support.rst  |  2 +-
+ doc/rapi.rst                | 46 ++++++++++++++++++++++++---------------------
+ 4 files changed, 33 insertions(+), 29 deletions(-)
+
+diff --git a/doc/design-chained-jobs.rst b/doc/design-chained-jobs.rst
+index 8f06dc0..66867dd 100644
+--- a/doc/design-chained-jobs.rst
++++ b/doc/design-chained-jobs.rst
+@@ -84,24 +84,24 @@ Clients using the ``SubmitManyJobs`` interface can use relative job IDs
+ 
+ Example data structures::
+ 
+-  # First job
++  // First job
+   {
+     "job_id": "6151",
+     "ops": [
+-      { "OP_ID": "OP_INSTANCE_REPLACE_DISKS", ..., },
+-      { "OP_ID": "OP_INSTANCE_FAILOVER", ..., },
++      { "OP_ID": "OP_INSTANCE_REPLACE_DISKS", /*...*/ },
++      { "OP_ID": "OP_INSTANCE_FAILOVER", /*...*/ },
+       ],
+   }
+ 
+-  # Second job, runs in parallel with first job
++  // Second job, runs in parallel with first job
+   {
+     "job_id": "7687",
+     "ops": [
+-      { "OP_ID": "OP_INSTANCE_MIGRATE", ..., },
++      { "OP_ID": "OP_INSTANCE_MIGRATE", /*...*/ }
+       ],
+   }
+ 
+-  # Third job, depending on success of previous jobs
++  // Third job, depending on success of previous jobs
+   {
+     "job_id": "9218",
+     "ops": [
+diff --git a/doc/design-node-add.rst b/doc/design-node-add.rst
+index e1d460d..d4103f3 100644
+--- a/doc/design-node-add.rst
++++ b/doc/design-node-add.rst
+@@ -155,7 +155,7 @@ Unless specified otherwise, all entries are optional.
+       "cluster_name": "cluster.example.com",
+       "master_ip": "192.168.2.1",
+       "master_netdev": "br0",
+-      # …
++      // ...
+     }
+ 
+ ``start_node_daemon``
+diff --git a/doc/design-ovf-support.rst b/doc/design-ovf-support.rst
+index 1b972ae..6524b09 100644
+--- a/doc/design-ovf-support.rst
++++ b/doc/design-ovf-support.rst
+@@ -122,7 +122,7 @@ The basic structure of Ganeti ``.ovf`` file is the following::
+             <gnt:VersionId/>
+             <gnt:AutoBalance/>
+             <gnt:Tags></gnt:Tags>
+-            <gnt:DiskTemplate</gnt:DiskTemplate>
++            <gnt:DiskTemplate></gnt:DiskTemplate>
+             <gnt:OperatingSystem>
+                 <gnt:Name/>
+                 <gnt:Parameters></gnt:Parameters>
+diff --git a/doc/rapi.rst b/doc/rapi.rst
+index dc7784a..a922c35 100644
+--- a/doc/rapi.rst
++++ b/doc/rapi.rst
+@@ -413,7 +413,7 @@ Example::
+         "memory": 128
+        }
+       },
+-    …
++    // ...
+   }
+ 
+ 
+@@ -677,11 +677,11 @@ Example::
+     [
+       {
+         "name": "group1",
+-        "uri": "\/2\/groups\/group1"
++        "uri": "/2/groups/group1"
+       },
+       {
+         "name": "group2",
+-        "uri": "\/2\/groups\/group2"
++        "uri": "/2/groups/group2"
+       }
+     ]
+ 
+@@ -702,7 +702,7 @@ Example::
+           "node2.example.com"
+         ],
+         "uuid": "0d7d407c-262e-49af-881a-6a430034bf43",
+-        …
++        // ...
+       },
+       {
+         "name": "group2",
+@@ -711,9 +711,9 @@ Example::
+           "node3.example.com"
+         ],
+         "uuid": "f5a277e7-68f9-44d3-a378-4b25ecb5df5c",
+-        …
++        // ...
+       },
+-      …
++      // ...
+     ]
+ 
+ 
+@@ -892,6 +892,7 @@ It supports the ``dry-run`` argument.
+ 
+ ``DELETE``
+ ~~~~~~~~~~
++.. highlight:: none
+ 
+ Delete a tag.
+ 
+@@ -901,6 +902,7 @@ to URI like::
+     /tags?tag=[tag]&tag=[tag]
+ 
+ It supports the ``dry-run`` argument.
++.. highlight:: javascript
+ 
+ 
+ .. _rapi-res-networks:
+@@ -925,11 +927,11 @@ Example::
+     [
+       {
+         "name": "network1",
+-        "uri": "\/2\/networks\/network1"
++        "uri": "/2/networks/network1"
+       },
+       {
+         "name": "network2",
+-        "uri": "\/2\/networks\/network2"
++        "uri": "/2/networks/network2"
+       }
+     ]
+ 
+@@ -946,19 +948,19 @@ Example::
+         'external_reservations': '10.0.0.0, 10.0.0.1, 10.0.0.15',
+         'free_count': 13,
+         'gateway': '10.0.0.1',
+-        'gateway6': None,
++        'gateway6': null,
+         'group_list': ['default(bridged, prv0)'],
+         'inst_list': [],
+-        'mac_prefix': None,
++        'mac_prefix': null,
+         'map': 'XX.............X',
+         'name': 'nat',
+         'network': '10.0.0.0/28',
+-        'network6': None,
++        'network6': null,
+         'reserved_count': 3,
+         'tags': ['nfdhcpd'],
+-        …
++        // ...
+       },
+-      …
++      // ...
+     ]
+ 
+ 
+@@ -1135,6 +1137,7 @@ It supports the ``dry-run`` argument.
+ 
+ ``DELETE``
+ ~~~~~~~~~~
++.. highlight:: none
+ 
+ Delete a tag.
+ 
+@@ -1145,6 +1148,7 @@ to URI like::
+ 
+ It supports the ``dry-run`` argument.
+ 
++..highlight:: javascript
+ 
+ .. _rapi-res-instances-multi-alloc:
+ 
+@@ -1192,11 +1196,11 @@ Example::
+     [
+       {
+         "name": "web.example.com",
+-        "uri": "\/instances\/web.example.com"
++        "uri": "/instances/web.example.com"
+       },
+       {
+         "name": "mail.example.com",
+-        "uri": "\/instances\/mail.example.com"
++        "uri": "/instances/mail.example.com"
+       }
+     ]
+ 
+@@ -1231,9 +1235,9 @@ Example::
+         "admin_state": true,
+         "os": "debian-etch",
+         "oper_state": true,
+-        …
++        // ...
+       },
+-      …
++      // ...
+     ]
+ 
+ 
+@@ -2035,11 +2039,11 @@ Example::
+     [
+       {
+         "id": "node1.example.com",
+-        "uri": "\/nodes\/node1.example.com"
++        "uri": "/nodes/node1.example.com"
+       },
+       {
+         "id": "node2.example.com",
+-        "uri": "\/nodes\/node2.example.com"
++        "uri": "/nodes/node2.example.com"
+       }
+     ]
+ 
+@@ -2063,9 +2067,9 @@ Example::
+         "sinst_cnt": 2,
+         "dfree": 5171712,
+         "offline": false,
+-        …
++        // ...
+       },
+-      …
++      // ...
+     ]
+ 
+ 

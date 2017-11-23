@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Copyright (C) 2009 Google Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+# This is an example ganeti script that should be run from cron on all
+# nodes; it will archive the ganeti configuration into a separate
+# directory tree via GIT, so that it is possible to restore the
+# history of cluster configuration changes if needed
+
+# The script requires the lockfile-progs package and the git software
+
+# Note that since Ganeti 2.0, config.data is the authoritative source
+# of configuration; as such, we don't need to backup the ssconf files,
+# and the other files (server.pem, rapi.pem, hmac.key, known_hosts,
+# etc.) do no hold critical data (they can be regenerated at will, as
+# long as they are synchronised).
+
+set -e
+
+LOCALSTATEDIR=@LOCALSTATEDIR@
+SYSCONFDIR=@SYSCONFDIR@
+
+GANETIDIR=${LOCALSTATEDIR}/lib/ganeti
+CONFIGDATA=${GANETIDIR}/config.data
+
+GNTBKDIR=${LOCALSTATEDIR}/lib/gnt-config-backup
+LOCKFILE=${LOCALSTATEDIR}/lock/gnt-config-backup
+
+# exit if no ganeti config file (no cluster configured, or not M/MC)
+test -f $CONFIGDATA || exit 0
+
+# We use a simple lock method, since our script should be fast enough
+# (no network, not talking to ganeti-masterd) that we don't expect to
+# run over 5 minutes if the system is healthy
+lockfile-create "$LOCKFILE" || exit 1
+trap 'lockfile-remove $LOCKFILE' EXIT
+
+test -d $GNTBKDIR || mkdir $GNTBKDIR
+
+cd $GNTBKDIR
+
+test -d .git || git init
+
+cp -f $CONFIGDATA config.data
+git add config.data
+git commit -q -m "Automatic commit by gnt-config-backup"
+
+touch last_run

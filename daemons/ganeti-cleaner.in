@@ -1,0 +1,142 @@
+#!/bin/bash
+#
+
+# Copyright (C) 2009, 2010, 2011, 2012 Google Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+set -e -u
+
+@SHELL_ENV_INIT@
+
+# Overridden by unittest
+: ${CHECK_CERT_EXPIRED:=$PKGLIBDIR/check-cert-expired}
+
+usage() {
+    echo "Usage: $0 node|master" 2>&1
+    exit $1
+}
+
+if [[ "$#" -ne 1 ]]; then
+  usage 1
+fi
+
+case "$1" in
+  node)
+    readonly CLEANER_LOG_DIR=$LOG_DIR/cleaner
+    ;;
+  master)
+    readonly CLEANER_LOG_DIR=$LOG_DIR/master-cleaner
+    ;;
+  --help-completion)
+    echo "choices=node,master 1 1"
+    exit 0
+    ;;
+  --help)
+    usage 0
+    ;;
+  *)
+    usage 1
+    ;;
+esac
+
+readonly CRYPTO_DIR=$RUN_DIR/crypto
+readonly QUEUE_ARCHIVE_DIR=$DATA_DIR/queue/archive
+
+in_cluster() {
+  [[ -e $DATA_DIR/ssconf_master_node ]]
+}
+
+cleanup_node() {
+  # Return if directory for crypto keys doesn't exist
+  [[ -d $CRYPTO_DIR ]] || return 0
+
+  find $CRYPTO_DIR -mindepth 1 -maxdepth 1 -type d | \
+  while read dir; do
+    if $CHECK_CERT_EXPIRED $dir/cert; then
+      rm -vf $dir/{cert,key}
+      rmdir -v --ignore-fail-on-non-empty $dir
+    fi
+  done
+}
+
+cleanup_watcher() {
+  # Return if machine is not part of a cluster
+  in_cluster || return 0
+
+  # Remove old watcher files
+  find $DATA_DIR -maxdepth 1 -type f -mtime +$REMOVE_AFTER \
+    \( -name 'watcher.*-*-*-*.data' -or \
+       -name 'watcher.*-*-*-*.instance-status' \) -print0 | \
+  xargs -r0 rm -vf
+}
+
+cleanup_master() {
+  # Return if machine is not part of a cluster
+  in_cluster || return 0
+
+  # Return if queue archive directory doesn't exist
+  [[ -d $QUEUE_ARCHIVE_DIR ]] || return 0
+
+  # Remove old jobs
+  find $QUEUE_ARCHIVE_DIR -mindepth 2 -type f -mtime +$REMOVE_AFTER -print0 | \
+  xargs -r0 rm -vf
+}
+
+# Define how many days archived jobs should be left alone
+REMOVE_AFTER=21
+
+# Define how many log files to keep around (usually one per day)
+KEEP_LOGS=50
+
+# Log file for this run
+LOG_FILE=$CLEANER_LOG_DIR/cleaner-$(date +'%Y-%m-%dT%H_%M').$$.log
+
+# Create log directory
+mkdir -p $CLEANER_LOG_DIR
+
+# Redirect all output to log file
+exec >>$LOG_FILE 2>&1
+
+echo "Cleaner started at $(date)"
+
+# Switch to a working directory accessible to the cleaner
+cd $CLEANER_LOG_DIR
+
+# Remove old cleaner log files
+find $CLEANER_LOG_DIR -maxdepth 1 -type f | sort | head -n -$KEEP_LOGS | \
+xargs -r rm -vf
+
+case "$1" in
+  node)
+    cleanup_node
+    cleanup_watcher
+    ;;
+  master)
+    cleanup_master
+    ;;
+esac
+
+exit 0

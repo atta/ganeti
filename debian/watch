@@ -1,0 +1,4 @@
+version=3
+
+opts=pgpsigurlmangle=s/$/.sig/ \
+ http://downloads.ganeti.org/releases/2.16/ ganeti-(\d+\.\d+[\d.]+(?:~rc[0-9]+)?)\.tar\.gz

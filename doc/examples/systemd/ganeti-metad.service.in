@@ -1,0 +1,17 @@
+[Unit]
+Description = Ganeti instance metadata daemon (metad)
+Requires = ganeti-common.service
+After = ganeti-common.service
+PartOf = ganeti-noded.target
+
+[Service]
+Type = simple
+User = @GNTMETADUSER@
+Group = @GNTMETADGROUP@
+ExecStart = @SBINDIR@/ganeti-metad -f
+Restart = on-failure
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+Capabilities=cap_net_bind_service+=ep
+
+# ganeti-metad is started on-demand by noded, so there must be no Install
+# section.
