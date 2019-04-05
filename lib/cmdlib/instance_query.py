@@ -99,7 +99,7 @@ class LUInstanceQueryData(NoHooksLU):
       elif level == locking.LEVEL_NETWORK:
         self.needed_locks[locking.LEVEL_NETWORK] = \
           frozenset(net_uuid
-                    for instance_uuid in owned_instances.keys()
+                    for instance_uuid in owned_instances.keys
                     for net_uuid in
                     self.cfg.GetInstanceNetworks(instance_uuid))
 
