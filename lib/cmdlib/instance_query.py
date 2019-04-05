@@ -89,7 +89,7 @@ class LUInstanceQueryData(NoHooksLU):
         # via the node before it's locked, requiring verification later on
         self.needed_locks[locking.LEVEL_NODEGROUP] = \
           frozenset(group_uuid
-                    for instance_uuid in owned_instances.keys()
+                    for instance_uuid in owned_instances
                     for group_uuid in
                     self.cfg.GetInstanceNodeGroups(instance_uuid))
 
@@ -99,7 +99,7 @@ class LUInstanceQueryData(NoHooksLU):
       elif level == locking.LEVEL_NETWORK:
         self.needed_locks[locking.LEVEL_NETWORK] = \
           frozenset(net_uuid
-                    for instance_uuid in owned_instances.keys()
+                    for instance_uuid in owned_instances.keys
                     for net_uuid in
                     self.cfg.GetInstanceNetworks(instance_uuid))
 
@@ -127,7 +127,7 @@ class LUInstanceQueryData(NoHooksLU):
       assert not (owned_instances or owned_groups or
                   owned_node_uuids or owned_networks)
 
-    self.wanted_instances = instances.values()
+    self.wanted_instances = list(instances.values())
 
   def _ComputeBlockdevStatus(self, node_uuid, instance, dev):
     """Returns the status of a block device
