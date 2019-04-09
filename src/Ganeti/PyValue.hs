@@ -44,6 +44,7 @@ module Ganeti.PyValue
 
 import Data.List (intercalate)
 import Data.Map (Map)
+import Data.ByteString (ByteString)
 import qualified Data.Map as Map
 import qualified Data.Set as Set (toList)
 
@@ -77,6 +78,9 @@ instance PyValue Double where
 instance PyValue Char where
   showValue = show
   showValueList = show
+
+instance PyValue ByteString where
+  showValue x = "b" ++ show x
 
 instance (PyValue a, PyValue b) => PyValue (a, b) where
   showValue (x, y) = "(" ++ showValue x ++ "," ++ showValue y ++ ")"
