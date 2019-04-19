@@ -1338,6 +1338,7 @@ def SSLVerifyPeer(conn, cert, errnum, errdepth, ok):
   if errdepth > 0:
     server_digest = utils.GetCertificateDigest(
         cert_filename=pathutils.NODED_CERT_FILE)
+    cert_digest = cert.digest("sha1").decode("ascii")
     match = cert_digest == server_digest
     if not match:
       logging.debug("Received certificate from the certificate chain, which"
