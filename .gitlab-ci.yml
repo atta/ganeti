@@ -1,0 +1,35 @@
+---
+image: registry.salsa.debian.org/$CI_PROJECT_NAMESPACE/ganeti-ci-images:debian-buster
+stages:
+  - build
+  - test
+build:
+  stage: build
+  artifacts:
+    untracked: true
+    paths:
+    - .
+    expire_in: 1 week
+  script:
+    - pwd
+    - ./autogen.sh
+    - ./configure
+    - ./configure --prefix=/usr --localstatedir=/var --sysconfdir=/etc --with-export-dir=/var/lib/ganeti/export --with-iallocator-search-path=/usr/local/lib/ganeti/iallocators,/usr/lib/ganeti/iallocators --with-os-search-path=/srv/ganeti/os,/usr/local/lib/ganeti/os,/usr/lib/ganeti/os,/usr/share/ganeti/os --with-extstorage-search-path=/srv/ganeti/extstorage,/usr/local/lib/ganeti/extstorage,/usr/lib/ganeti/extstorage,/usr/share/ganeti/extstorage --docdir=/usr/share/doc/ganeti --enable-restricted-commands --disable-symlinks --with-haskell-flags="-optl -Wl,-z,relro -optl -Wl,--as-needed" --with-user-prefix=gnt- --with-group-prefix=gnt- --with-ssh-initscript=/usr/sbin/invoke-rc.d ssh --with-backup-dir=/var/backups PYTHON=/usr/bin/python3 --no-create --no-recursion --enable-haskell-tests
+    - make
+    - make install DESTDIR=./install/
+py-unittest:
+  stage: test
+  script:
+    - make py-tests
+hs-unittest:
+  stage: test
+  script:
+    - make hs-tests
+vcluster:
+  stage: test
+  script:
+    - rsync -avr ./install/* /
+    - ln -s /usr/lib/ganeti/3.0/ /etc/ganeti/lib
+    - ln -s /usr/share/ganeti/3.0/ /etc/ganeti/share
+    - ./qa/vcluster-qa
+   
