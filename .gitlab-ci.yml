@@ -4,8 +4,7 @@ stages:
   - build
   - install
   - test
-  - qa
-build_job:
+build:
   stage: build
   artifacts:
     untracked: true
@@ -13,21 +12,21 @@ build_job:
     - ./autogen.sh
     - ./configure --enable-haskell-tests
     - make
-install_job:
+install:
   stage: install
   artifacts:
     untracked: true
   script:
     - make install
-test_job:
+unittest:
   stage: test
   artifacts:
     untracked: true
   script:
     - make py-tests
     - make hs-tests
-qa_job:
-  stage: qa
+vcluster:
+  stage: test
   artifacts:
     untracked: true
   script:
