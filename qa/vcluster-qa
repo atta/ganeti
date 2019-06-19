@@ -18,6 +18,8 @@ ssh-keyscan localhost >> /root/.ssh/known_hosts
 
 vcluster_dir="/tmp/ganeti-vcluster"
 
+ip -br link show 
+
 if [ -n "$AUTOPKGTEST_ARTIFACTS" ]; then
 	mkdir "${AUTOPKGTEST_ARTIFACTS}/ganeti-vcluster"
 	ln -s "${AUTOPKGTEST_ARTIFACTS}/ganeti-vcluster" "$vcluster_dir"
@@ -27,7 +29,7 @@ fi
 
 # Setup the vcluster
 
-/usr/lib/ganeti/tools/vcluster-setup -c 5 -i 5 -n gnt "$vcluster_dir"
+./install/usr/lib/ganeti/tools/vcluster-setup -c 5 -i 5 -n gnt "$vcluster_dir"
 
 # Setup the python library path to point to the installed Ganeti instance
 export PYTHONPATH="/usr/share/ganeti/default"
