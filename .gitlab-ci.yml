@@ -7,7 +7,9 @@ build:
   stage: build
   artifacts:
     untracked: true
-    path: /
+    paths:
+    - /
+    expire_in: 1 week
   script:
     - pwd
     - ./autogen.sh
