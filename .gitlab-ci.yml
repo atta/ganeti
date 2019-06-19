@@ -8,14 +8,19 @@ build:
   artifacts:
     untracked: true
     paths:
-    - /
+    - .
     expire_in: 1 week
   script:
     - pwd
     - ./autogen.sh
-    - ./configure --enable-haskell-tests
+    - ./configure --prefix=/usr --localstatedir=/var --sysconfdir=/etc --with-export-dir=/var/lib/ganeti/export --with-iallocator-search-path=/usr/local/lib
+/ganeti/iallocators,/usr/lib/ganeti/iallocators --with-os-search-path=/srv/ganeti/os,/usr/local/lib/ganeti/os,/usr/lib/ganeti/os,/usr/share/ganeti/os --with-extstorage-search-path=/srv/ganeti
+/extstorage,/usr/local/lib/ganeti/extstorage,/usr/lib/ganeti/extstorage,/usr/share/ganeti/extstorage --docdir=/usr/share/doc/ganeti --enable-restricted-commands --disable-symlinks --with-hask
+ell-flags=-optl -Wl,-z,relro -optl -Wl,--as-needed --with-user-prefix=gnt- --with-group-prefix=gnt- --with-ssh-initscript=/usr/sbin/invoke-rc.d ssh --with-backup-dir=/var/backups PYTHON=/usr/
+bin/python --no-create --no-recursion --enable-haskell-tests
     - make
-    - make install
+    - mkdir ./install
+    - make install DESTDIR=./install/
 py-unittest:
   stage: test
   script:
@@ -27,7 +32,5 @@ hs-unittest:
 vcluster:
   stage: test
   script:
-    - ./autogen.sh
-    - make install 
     - ./qa/vcluster-qa
    
