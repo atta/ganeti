@@ -7,27 +7,24 @@ build:
   stage: build
   artifacts:
     untracked: true
+    path: /
   script:
+    - pwd
     - ./autogen.sh
     - ./configure --enable-haskell-tests
     - make
     - make install
 py-unittest:
   stage: test
-  artifacts:
-    untracked: true
   script:
     - make py-tests
 hs-unittest:
   stage: test
-  artifacts:
-    untracked: true
   script:
     - make hs-tests
 vcluster:
   stage: test
-  artifacts:
-    untracked: true
   script:
-   - ./qa/vcluster-qa
+    - make install 
+    - ./qa/vcluster-qa
    
