@@ -7,21 +7,37 @@ stages:
   - qa
 build_job:
   stage: build
+  artifacts:
+    untracked: true
   script:
     - ./autogen.sh
     - ./configure --enable-haskell-tests
     - make
 install_job:
   stage: install
+  artifacts:
+    untracked: true
+  dependencies: 
+    - build
   script:
     - make install
 test_job:
   stage: test
+  artifacts:
+    untracked: true
+  dependencies: 
+    - build
+    - install
   script:
     - make py-tests
     - make hs-tests
 qa_job:
   stage: qa
+  artifacts:
+    untracked: true
+  dependencies: 
+    - build
+    - install
   script:
    - ./qa/vcluster-qa
    
