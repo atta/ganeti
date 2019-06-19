@@ -27,6 +27,7 @@ hs-unittest:
 vcluster:
   stage: test
   script:
+    - ./autogen.sh
     - make install 
     - ./qa/vcluster-qa
    
