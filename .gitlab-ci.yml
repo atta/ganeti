@@ -2,7 +2,6 @@
 image: registry.salsa.debian.org/ganeti-team/ganeti-ci-images:debian-buster
 stages:
   - build
-  - install
   - test
 build:
   stage: build
@@ -12,18 +11,18 @@ build:
     - ./autogen.sh
     - ./configure --enable-haskell-tests
     - make
-install:
-  stage: install
-  artifacts:
-    untracked: true
-  script:
     - make install
-unittest:
+py-unittest:
   stage: test
   artifacts:
     untracked: true
   script:
     - make py-tests
+hs-unittest:
+  stage: test
+  artifacts:
+    untracked: true
+  script:
     - make hs-tests
 vcluster:
   stage: test
