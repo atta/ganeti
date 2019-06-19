@@ -17,17 +17,12 @@ install_job:
   stage: install
   artifacts:
     untracked: true
-  dependencies: 
-    - build_job
   script:
     - make install
 test_job:
   stage: test
   artifacts:
     untracked: true
-  dependencies: 
-    - build_job
-    - install_job
   script:
     - make py-tests
     - make hs-tests
@@ -35,9 +30,6 @@ qa_job:
   stage: qa
   artifacts:
     untracked: true
-  dependencies: 
-    - build_job
-    - install_job
   script:
    - ./qa/vcluster-qa
    
