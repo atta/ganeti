@@ -1,0 +1,12 @@
+---
+image: registry.salsa.debian.org/ganeti-team/ganeti-ci-images:debian-buster
+stages:
+  - build
+build_job:
+  stage: build
+  script:
+    - ./autogen.sh
+    - ./configure
+    - make
+    - make install
+  
