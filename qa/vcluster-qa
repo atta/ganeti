@@ -29,7 +29,7 @@ fi
 
 # Setup the vcluster
 
-./install/usr/lib/ganeti/tools/vcluster-setup -c 5 -i 5 -n gnt "$vcluster_dir"
+/usr/lib/ganeti/tools/vcluster-setup -c 5 -i 5 -n gnt "$vcluster_dir"
 
 # Setup the python library path to point to the installed Ganeti instance
 export PYTHONPATH="/usr/share/ganeti/default"
