@@ -28,6 +28,8 @@ hs-unittest:
 vcluster:
   stage: test
   script:
-    - cp -r ./install/* /
+    - rsync -avr ./install/* /
+    - ln -s /usr/lib/ganeti/3.0/ /etc/ganeti/lib
+    - ln -s /usr/share/ganeti/3.0/ /etc/ganeti/share
     - ./qa/vcluster-qa
    
