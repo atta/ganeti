@@ -611,7 +611,7 @@ case_AllDefined = do
      runPython "from ganeti import opcodes\n\
                \from ganeti import serializer\n\
                \import sys\n\
-               \print serializer.Dump([opid for opid in opcodes.OP_MAPPING])\n"
+               \print(serializer.Dump([opid for opid in opcodes.OP_MAPPING]).decode())\n"
                ""
      >>= checkPythonResult
   py_ops <- case J.decode py_stdout::J.Result [String] of
@@ -668,9 +668,9 @@ case_py_compat_types = do
                \  op.Validate(True)\n\
                \encoded = [(op.Summary(), op.__getstate__())\n\
                \           for op in decoded]\n\
-               \print serializer.Dump(\
+               \print(serializer.Dump(\
                \  encoded,\
-               \  private_encoder=serializer.EncodeWithPrivateFields)"
+               \  private_encoder=serializer.EncodeWithPrivateFields).decode())"
                serialized
      >>= checkPythonResult
   let deserialised =
@@ -700,7 +700,7 @@ case_py_compat_fields = do
                \from ganeti import serializer\n\
                \fields = [(k, sorted([p[0] for p in v.OP_PARAMS]))\n\
                \           for k, v in opcodes.OP_MAPPING.items()]\n\
-               \print serializer.Dump(fields)" ""
+               \print(serializer.Dump(fields).decode())" ""
      >>= checkPythonResult
   let deserialised = J.decode py_stdout::J.Result [(String, [String])]
   py_fields <- case deserialised of

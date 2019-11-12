@@ -40,8 +40,7 @@ import select
 import logging
 import signal
 import resource
-
-from io import StringIO
+import io
 
 from ganeti import errors
 from ganeti import constants
@@ -565,8 +564,8 @@ def _RunCmdPipe(cmd, env, via_shell, cwd, interactive, timeout, noclose_fds,
   if postfork_fn:
     postfork_fn(child.pid)
 
-  out = StringIO()
-  err = StringIO()
+  out = io.StringIO()
+  err = io.StringIO()
 
   linger_timeout = None
 

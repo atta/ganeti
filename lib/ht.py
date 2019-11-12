@@ -660,7 +660,7 @@ def _CheckCIDRNetNotation(value):
 
   """
   try:
-    ipaddress.IPv4Network(value)
+    ipaddress.IPv4Network(value, strict=False)
   except ipaddress.AddressValueError:
     return False
   return True

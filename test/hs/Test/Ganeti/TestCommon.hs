@@ -201,7 +201,7 @@ stableCover p percent s prop =
 -- variable is defined, use its value, otherwise use just \"python\".
 pythonCmd :: IO String
 pythonCmd = catchJust (guard . isDoesNotExistError)
-            (getEnv "PYTHON") (const (return "python"))
+            (getEnv "PYTHON") (const (return "python3"))
 
 -- | Run Python with an expression, returning the exit code, standard
 -- output and error.

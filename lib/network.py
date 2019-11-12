@@ -78,7 +78,7 @@ class AddressPool(object):
 
     self.net = network
 
-    self.network = ipaddress.ip_network(self.net.network)
+    self.network = ipaddress.ip_network(self.net.network, strict=False)
     if self.network.num_addresses > IPV4_NETWORK_MAX_NUM_HOSTS:
       raise errors.AddressPoolError("A big network with %s host(s) is currently"
                                     " not supported. please specify at most a"
@@ -96,7 +96,7 @@ class AddressPool(object):
       self.gateway = ipaddress.ip_address(self.net.gateway)
 
     if self.net.network6:
-      self.network6 = ipaddress.IPv6Network(self.net.network6)
+      self.network6 = ipaddress.IPv6Network(self.net.network6, strict=False)
     if self.net.gateway6:
       self.gateway6 = ipaddress.IPv6Address(self.net.gateway6)
 

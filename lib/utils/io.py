@@ -42,7 +42,8 @@ import stat
 import grp
 import pwd
 
-from io import FileIO, TextIOWrapper, BufferedRWPair
+import io
+# from io import FileIO, TextIOWrapper, BufferedRWPair
 
 from ganeti import errors
 from ganeti import constants
