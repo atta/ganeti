@@ -42,8 +42,7 @@ import stat
 import grp
 import pwd
 
-import io
-# from io import FileIO, TextIOWrapper, BufferedRWPair
+from io import FileIO, TextIOWrapper, BufferedRWPair
 
 from ganeti import errors
 from ganeti import constants
@@ -1068,7 +1067,7 @@ def OpenTTY(device="/dev/tty"):
   @param device: path to the TTY/PTY device to open
 
   """
-  _tty = io.FileIO(device, "r+")
-  _buffered_tty = io.BufferedRWPair(_tty, _tty)
+  _tty = FileIO(device, "r+")
+  _buffered_tty = BufferedRWPair(_tty, _tty)
 
-  return io.TextIOWrapper(_buffered_tty)
+  return TextIOWrapper(_buffered_tty)

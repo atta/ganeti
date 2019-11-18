@@ -34,8 +34,8 @@
 import os.path
 import logging
 import logging.handlers
-import io
-# from io import StringIO
+
+from io import StringIO
 
 from ganeti import constants
 from ganeti import compat
@@ -301,7 +301,7 @@ def SetupToolLogging(debug, verbose, threadname=False,
   else:
     root_logger = _root_logger
 
-  fmt = io.StringIO()
+  fmt = StringIO()
   fmt.write("%(asctime)s:")
 
   if threadname:

@@ -31,7 +31,7 @@
 
 """
 
-import io
+from io import StringIO
 
 from ganeti import pathutils
 
@@ -55,7 +55,7 @@ def SetEtcHostsEntry(file_name, ip, hostname, aliases):
   # Ensure aliases are unique
   names = algo.UniqueSequence([hostname] + aliases)
 
-  out = io.StringIO()
+  out = StringIO()
 
   def _write_entry(written):
     if not written:
@@ -99,7 +99,7 @@ def RemoveEtcHostsEntry(file_name, hostname):
   @param hostname: the hostname to be removed
 
   """
-  out = io.StringIO()
+  out = StringIO()
 
   for line in io.ReadFile(file_name).splitlines(True):
     fields = line.split()
