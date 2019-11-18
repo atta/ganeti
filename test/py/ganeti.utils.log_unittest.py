@@ -66,6 +66,7 @@ class TestLogHandler(unittest.TestCase):
     handler.close()
 
     self.assertEqual(len(utils.ReadFile(tmpfile.name).splitlines()), 2)
+    tmpfile.close()
 
   def testReopen(self):
     tmpfile = tempfile.NamedTemporaryFile()
@@ -110,6 +111,8 @@ class TestLogHandler(unittest.TestCase):
 
     self.assertEqual(len(utils.ReadFile(tmpfile.name).splitlines()), 4)
     self.assertEqual(len(utils.ReadFile(tmpfile2.name).splitlines()), 3)
+    tmpfile.close()
+    tmpfile2.close()
 
   def testConsole(self):
     temp_file = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8")
@@ -181,6 +184,8 @@ class TestSetupLogging(unittest.TestCase):
     logging.error("This message should not show up in the test log file")
 
     self.assertTrue(utils.ReadFile(logfile).endswith("This is a test\n"))
+    for handler in logger.handlers:
+      handler.close()
 
   def testReopen(self):
     logfile = utils.PathJoin(self.tmpdir, "reopen.log")
@@ -210,7 +215,8 @@ class TestSetupLogging(unittest.TestCase):
 
     self.assertTrue(utils.ReadFile(logfile).endswith("First message\n"))
     self.assertTrue(utils.ReadFile(logfile2).endswith("This is a test\n"))
-
+    for handler in logger.handlers:
+      handler.close()
 
 class TestSetupToolLogging(unittest.TestCase):
   def test(self):
