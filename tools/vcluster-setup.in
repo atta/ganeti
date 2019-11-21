@@ -255,7 +255,7 @@ setup_etc_hosts() {
       done
     } > $tmpfile && \
     chmod 0644 $tmpfile && \
-    mv $tmpfile $etc_hosts_filename && \
+    cat $tmpfile > $etc_hosts_filename && \
     trap - EXIT
   )
 }
@@ -268,7 +268,7 @@ setup_network_interfaces() {
     ip addr add "$ipaddr" dev "$netdev"
   done
 
-  route add -net $netprefix.0 netmask 255.255.255.0 dev $netdev || :
+  ip route add $netprefix.0/24 dev $netdev || :
 }
 
 setup_scripts() {

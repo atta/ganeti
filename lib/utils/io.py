@@ -491,7 +491,7 @@ def EnforcePermission(path, mode, uid=None, gid=None, must_exist=True,
 
 
 def MakeDirWithPerm(path, mode, uid, gid, _lstat_fn=os.lstat,
-                    _mkdir_fn=os.mkdir, _perm_fn=EnforcePermission):
+                    _mkdir_fn=os.makedirs, _perm_fn=EnforcePermission):
   """Enforces that given path is a dir and has given mode, uid and gid set.
 
   @param path: The path to the file

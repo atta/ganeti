@@ -28,8 +28,10 @@ else
 fi
 
 # Setup the vcluster
+/usr/lib/ganeti/tools/users-setup --yes-do-it
 
-/usr/lib/ganeti/tools/vcluster-setup -c 5 -i 5 -n gnt "$vcluster_dir"
+# use RFC5737 198.51.100.0/24 (TEST-NET-2)
+/usr/lib/ganeti/tools/vcluster-setup -c 5 -i 5 -p 198.51.100 -n gnt "$vcluster_dir"
 
 # Setup the python library path to point to the installed Ganeti instance
 export PYTHONPATH="/usr/share/ganeti/default"
