@@ -393,7 +393,7 @@ class _RpcProcessor(object):
 
     assert isinstance(body, dict)
     assert len(body) == len(hosts)
-    assert compat.all(isinstance(str(v), str) for v in body.values())
+    assert compat.all(isinstance(v, (str, bytes)) for v in body.values())
     assert frozenset(h[2] for h in hosts) == frozenset(body), \
         "%s != %s" % (hosts, list(body))
 

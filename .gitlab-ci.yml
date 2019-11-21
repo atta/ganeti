@@ -1,5 +1,5 @@
 ---
-image: registry.salsa.debian.org/ganeti-team/ganeti-ci-images:debian-buster
+image: registry.salsa.debian.org/$CI_PROJECT_NAMESPACE/ganeti-ci-images:debian-buster
 stages:
   - build
   - test

@@ -34,7 +34,6 @@
 import os.path
 import logging
 import logging.handlers
-
 from io import StringIO
 
 from ganeti import constants
