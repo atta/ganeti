@@ -82,8 +82,23 @@ instance PyValue Char where
   showValue = show
   showValueList = show
 
+-- (Byte)String show output does not work out of the box as a Python
+-- string/bytes literal, especially when special characters are involved.
+-- For instance, show ByteString.Char8.pack "\x03" yields "\ETX", which means
+-- something completely different in Python. Thus, we need to implement our own
+-- showValue, which does the following:
+--  * escapes double quotes
+--  * leaves all printable ASCII characters intact
+--  * encodes all other characters in \xYZ form
 instance PyValue ByteString where
-  showValue x = "b" ++ show x
+  showValue bs =
+    "b\"" ++ (BC8.foldr (\c acc -> formatChar c ++ acc) "" bs) ++ "\""
+    where
+    formatChar x
+      | x == '\\' = "\\"
+      | x == '"' = "\\\""
+      | isAscii x && isPrint x = [x]
+      | otherwise = (printf "\\x%02x" $ ord x)
 
 instance (PyValue a, PyValue b) => PyValue (a, b) where
   showValue (x, y) = "(" ++ showValue x ++ "," ++ showValue y ++ ")"
