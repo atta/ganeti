@@ -177,7 +177,3 @@
 /src/Ganeti/Hs2Py/ListConstants.hs
 /src/Ganeti/Version.hs
 /test/hs/Test/Ganeti/TestImports.hs
-
-/install/*
-/debian/*
-.gitignore
