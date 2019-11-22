@@ -869,7 +869,7 @@ AC_SUBST(MAN_HAS_WARNINGS)
 # We  tune _AM_PYTHON_INTERPRETER_LIST to first check interpreters that are
 # likely interpreters for Python 3.
 m4_define_default([_AM_PYTHON_INTERPRETER_LIST],
-                  [python3 python3.6 python3.5 python])
+                  [python3 python3.7 python3.6 python3.5 python])
 AM_PATH_PYTHON([3.5])
 AC_PYTHON_MODULE(OpenSSL, t)
 AC_PYTHON_MODULE(simplejson, t)
