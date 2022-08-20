@@ -165,10 +165,6 @@ class LUNodeAdd(LogicalUnit):
     node_name = self.hostname.name
     self.op.primary_ip = self.hostname.ip
     if self.op.secondary_ip is None:
-      if self.primary_ip_family == netutils.IP6Address.family:
-        raise errors.OpPrereqError("When using a IPv6 primary address, a valid"
-                                   " IPv4 address must be given as secondary",
-                                   errors.ECODE_INVAL)
       self.op.secondary_ip = self.op.primary_ip
 
     secondary_ip = self.op.secondary_ip
