@@ -172,8 +172,9 @@ class LUNodeAdd(LogicalUnit):
       self.op.secondary_ip = self.op.primary_ip
 
     secondary_ip = self.op.secondary_ip
-    if not netutils.IP4Address.IsValid(secondary_ip):
-      raise errors.OpPrereqError("Secondary IP (%s) needs to be a valid IPv4"
+    if not (netutils.IP4Address.IsValid(self.op.secondary_ip) or 
+    netutils.IP6Address.IsValid(self.op.secondary_ip)):
+      raise errors.OpPrereqError("Secondary IP (%s) needs to be a valid IPv4 or IPv6"
                                  " address" % secondary_ip, errors.ECODE_INVAL)
 
     existing_node_info = self.cfg.GetNodeInfoByName(node_name)
